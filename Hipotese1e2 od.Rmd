@@ -1,0 +1,398 @@
+---
+title: "Teste de hipotese"
+output:
+  html_document:
+    highlight: zenburn
+    html_document: default
+    keep_md: yes
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    word_document: default
+  word_document:
+    toc: yes
+---
+
+```{r setup}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE)
+setwd("~/ANOVA")
+
+# Pacotes e Funções
+library(tidyverse) # Manipulacao eficiente de dados
+library(ggplot2)
+library(dplyr)
+library(pdftools)
+library(RRPP)
+library(plotrix)
+library(purrr)
+
+```
+
+# Contexto do estudo
+
+ Neste estudo foram realizados diversos testes para verificar a hipótese de que há diferença estatisticamente significante no enquadramento de candidatos á presidência no Brasil. Não foi possível aplicar ANOVA, devido a grande quantidade de valores zerados, ou seja, os dados não possuem curva normal, sendo que a aplicação desses testes não seria válida. Foi então escolhido então teste t de Student para a distribuição por PLANOS e  na distribuição por DIA foi escolhido um teste para dados não paramétricos, o teste Wilcoxon.
+
+
+# POR PLANO - Teste t de Student - Primeiro turno 
+
+A diferença é calculada com  a fórmula abaixo:
+
+$Diferença = Positivo + Neutro - Negativo$  
+
+Sendo os dados distribuídos por PLANO, os quais podem ter diversos valores por dia
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(readxl)
+Tidy_Calculado_1T <- read_excel("TidyN-1oturn POR PLANO .xlsx")
+
+
+```
+
+## Médias da diferença de todos os candidatos
+
+```{r}
+
+DT::datatable(aggregate(Diferenca ~ Candidato, data = Tidy_Calculado_1T, mean))
+
+```
+
+## Média do Universo
+
+A média do universo é descrita abaixo
+
+```{r}
+m <- mean(Tidy_Calculado_1T$Diferenca)
+m
+```
+
+
+## Teste Haddad 1T
+
+Testando a hipótese que Haddad tem a diferença de Positivo + Neutro - Negativo menor que a média do universo.
+
+
+```{r}
+
+Haddad <- Tidy_Calculado_1T %>%
+             filter(Candidato == "HADDAD")
+          
+
+t.test(Haddad$Diferenca, mu=m)
+
+
+```
+
+A média de Haddad é estatisticamente igual a média do universo, segundo o teste t de Student.
+
+```{r}
+boxplot(Haddad$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Haddad", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Haddad e a média do universo")
+```
+
+## Teste Bolsonaro 1T - facada e Bolsonaro
+
+Testando a hipótese que Bolsonaro mais os enquadramentos da facada somados, tem a diferença de Positivo + Neutro - Negativo maior que a média do universo.
+
+
+```{r}
+
+Bolsonaro <- Tidy_Calculado_1T %>%
+             filter(Candidato == "BOLSONAROfacada")
+          
+
+t.test(Bolsonaro$Diferenca, mu=m)
+
+
+```
+
+A média de Bolsonaro é maior que a média do universo, e essa diferença é estatisticamente significante, segundo o teste t de Student.
+
+```{r}
+boxplot(Bolsonaro$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Bolsonaro", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Bolsonaro e a média do universo")
+```
+
+## Teste Ciro 1T
+
+Testando a hipótese que Ciro tem a diferença de Positivo + Neutro - Negativo maior que a média do universo.
+
+
+```{r}
+
+Ciro <- Tidy_Calculado_1T %>%
+             filter(Candidato == "CIRO")
+          
+
+t.test(Ciro$Diferenca, mu=m)
+
+
+```
+
+
+A média de Ciro é estatisticamente igual a média do universo, segundo o teste t de Student.
+
+```{r}
+boxplot(Ciro$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Ciro", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Ciro e a média do universo")
+```
+
+
+## Teste Marina 1T
+
+Testando a hipótese que Marina tem a diferença de Positivo + Neutro - Negativo maior que a média do universo.
+
+
+```{r}
+
+Marina <- Tidy_Calculado_1T %>%
+             filter(Candidato == "MARINA")
+          
+
+t.test(Marina$Diferenca, mu=m)
+
+
+```
+
+
+A média de Marina é estatisticamente menor que a média do universo, segundo o teste t de Student.
+
+```{r}
+boxplot(Marina$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Marina", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Marina e a média do universo")
+```
+
+
+## Teste Alckmin 1T
+
+Testando a hipótese que Alkimin tem a diferença de Positivo + Neutro - Negativo menor que a média do universo.
+
+
+```{r}
+
+Alckmin <- Tidy_Calculado_1T %>%
+             filter(Candidato == "ALCKMIN")
+          
+
+t.test(Alckmin$Diferenca, mu=m)
+
+
+```
+
+
+A média de Alckmin é estatisticamente menor que a média do universo, segundo o teste t de Student.
+
+```{r}
+boxplot(Alckmin$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Alckmin", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Alckmin e a média do universo")
+```
+
+
+## Conclusão do Primeiro turno por Plano
+
+Somando os enquadramentos positivos e neutros e diminuindo os enquadramentos negativos com a distribuição dos dados por PLANO, o candidato mais beneficiado no primeiro turno foi Bolsonaro. Bolsonaro foi o único candidato que teve a média da diferença (Posito + Neutro - Negativo por PLANO) estatisticamente maior que a média do universo, utilizando o teste i de Student. 
+
+
+# POR DIA - Teste Wilcoxon - Primeiro turno 
+
+O teste Wilcoxon foi usado na distribuição por DIA devido a quantidade baixa e não normalização dos dados
+
+A diferença é calculada com  a fórmula abaixo:
+
+$Diferença = Positivo + Neutro - Negativo$  
+
+Sendo que os dados foram agregados por DIA.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(readxl)
+Tidy_Calculado_1T <- read_excel("TidyN-1oturno POR DIA.xlsx")
+
+
+```
+
+## Médias da diferença de todos os candidatos
+
+```{r}
+
+DT::datatable(aggregate(Diferenca ~ Candidato, data = Tidy_Calculado_1T, mean))
+
+```
+
+## Média do Universo
+
+A média do universo é descrita abaixo
+
+```{r}
+m <- mean(Tidy_Calculado_1T$Diferenca)
+m
+```
+
+
+## Teste Haddad 1T
+
+Testando a hipótese que Haddad tem a diferença de Positivo + Neutro - Negativo menor que a média do universo.
+
+
+```{r}
+
+
+
+Haddad <- Tidy_Calculado_1T %>%
+             filter(Candidato == "HADDAD")
+          
+
+wilcox.test(Haddad$Diferenca, mu=m)
+
+
+```
+
+A média de Haddad é menor que a média do universo, e essa diferença é estatisticamente significante, segundo o teste Wilcoxon.
+
+```{r}
+boxplot(Haddad$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Haddad", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Haddad e a média do universo")
+```
+
+## Teste Bolsonaro 1T - facada e Bolsonaro
+
+Testando a hipótese que Bolsonaro mais os enquadramentos da facada somados, tem a diferença de Positivo + Neutro - Negativo maior que a média do universo.
+
+
+```{r}
+
+Bolsonaro <- Tidy_Calculado_1T %>%
+             filter(Candidato == "BOLSONAROFacada")
+          
+
+wilcox.test(Bolsonaro$Diferenca, mu=m)
+
+
+```
+
+A média de Bolsonaro é maior que a média do universo, mas essa diferença NÃO é estatisticamente significante, segundo o teste Wilcoxon.
+
+```{r}
+boxplot(Bolsonaro$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Bolsonaro", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Bolsonaro e a média do universo")
+```
+
+## Teste Ciro 1T
+
+Testando a hipótese que Ciro tem a diferença de Positivo + Neutro - Negativo maior que a média do universo.
+
+
+```{r}
+
+Ciro <- Tidy_Calculado_1T %>%
+             filter(Candidato == "CIRO")
+          
+
+wilcox.test(Ciro$Diferenca, mu=m)
+
+
+```
+
+
+A média de Ciro é maior que a média do universo, mas a diferença NÃO é estatisticamente significante, segundo o teste Wilcoxon.
+
+```{r}
+boxplot(Ciro$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Ciro", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Ciro e a média do universo")
+```
+
+
+## Teste Marina 1T
+
+Testando a hipótese que Marina tem a diferença de Positivo + Neutro - Negativo maior que a média do universo.
+
+
+```{r}
+
+Marina <- Tidy_Calculado_1T %>%
+             filter(Candidato == "MARINA")
+          
+
+wilcox.test(Marina$Diferenca, mu=m)
+
+
+```
+
+
+A média de Marina é estatisticamente igual a média do universo, segundo o teste Wilcoxon.
+
+```{r}
+boxplot(Marina$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Marina", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Marina e a média do universo")
+```
+
+
+## Teste Alckmin 1T
+
+Testando a hipótese que Alkimin tem a diferença de Positivo + Neutro - Negativo menor que a média do universo.
+
+
+```{r}
+
+Alckmin <- Tidy_Calculado_1T %>%
+             filter(Candidato == "ALCKMIN")
+          
+
+wilcox.test(Alckmin$Diferenca, mu=m)
+
+
+```
+
+
+A média de Alckmin é maior que a média do universo e essa diferença É estatisticamente significante, segundo o teste Wilcoxon.
+
+```{r}
+boxplot(Alckmin$Diferenca, Tidy_Calculado_1T$Diferenca, 
+        outline = FALSE,
+        names = c("Alckmin", "Média do Grupo"),  
+        col = c("blue", "yellow"), 
+        main = "Diferença entre Alckmin e a média do universo")
+```
+
+
+## Conclusão do Primeiro turno por DIA
+
+Somando os enquadramentos positivos e neutros e diminuindo os enquadramentos negativos agregados por DIA, o candidato mais beneficiado no primeiro turno foi Alckmin, que foi o único candidato que teve a média da diferença (Positivo + Neutro - Negativo dispostos por dia) estatisticamente maior que a média do universo, utilizando o teste Wilcoxon (para amostras com dados não normalizados). 
+
+
+
+
+
+
+
+

@@ -1,0 +1,336 @@
+---
+title: "ANOVA"
+author: "Analise estatística: Viviane Schneider, Modelo e Dados: Marta"
+date: "18 de abril de 2020"
+output: word_document
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Análise de Variância (ANOVA)
+
+Essa análise é  realizada a partir de testes estatísticos de datasets para verificar se existe uma diferença significativa entre as diferenças amostrais observadas. 
+Assim, essa analise visa explicar se as diferenças observadas são significativas ou reais, ou não são significativas, ou seja, são casuais, decorrentes da mera variabilidade amostral.
+
+Portanto, essa análise parte do pressuposto que o acaso só produz pequenos desvios, sendo as grandes diferenças geradas por causas reais. 
+
+Para determinar se existe diferença entre as médias, utiliza-se o teste de hipótese, no qual temos duas possibilidades: 
+
+(1) Hipótese nula (H0), ou seja as médias populacionais são iguais, 
+(2) Hipótese alternativa (HA), as médias populacionais são diferentes, ou pelo menos uma das médias é diferente das demais. 
+
+Além disso, existem dois tipos de análises por ANOVA: 
+
+(a) One-Way ANOVA; e 
+
+(b) Two-Way ANOVA. Nesse tutorial iremos abordar a análise por One-Way ANOVA.
+
+Neste estudo será utilizado o teste A One-Way ANOVA, pois será testadas as diferenças entre mais de três grupos.
+
+# Objetivo do estudo 
+
+Verificar se as diferenças entre os conjuntos de dados são significativas, ou seja HA é verdadeira, ou não significativa, ou seja H0 é verdadeira.
+
+
+# Materiais e técnicas
+
+Será utilizado o software R, versão 3.6.2 (12-12-2019),
+Copyright (C) 2019, feito pela Fundação R para Computação Estatística, em Plataforma: x86_64-w64-mingw32 / x64 (64 bits).
+
+R é um software livre criado em um projeto colaborativo, distribuído sob os termos do GNU General Public License, Versão 2, junho de 1991 ou Versão 3, junho de 2007.
+
+Cópias das versões 2 e 3 da licença podem ser encontradas
+em https://www.R-project.org/Licenses/.
+
+A linguagem R apresenta diversas funções e pacotes específicos para análises estatísticas e para criação de gráficos.
+
+
+## Pacotes R utilizados
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+# Pacotes e Funções
+library(tidyverse) 
+library(igraph)
+library(ggraph)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+library(pdftools)
+
+```
+
+## Variáveis
+
+P1	- POSITIVO	FALA	fala do candidato sincronizada com imagem
+
+P2	- POSITIVO	QUADRO	Close-up (cabeça inteira e parte do peito - intimidade)
+
+P3	- POSITIVO	ÂNGULO 	De baixo (empodera o candidato - como o olhar da criança que mira o adulto)
+
+P4	- POSITIVO	MOV. LENTE	zoom-in (aproximação, aprofundam.)
+
+P5	- POSITIVO	MOV. LENTE	camera no ombro (acompanha o candidato, estamos juntos, no mesmo nível)
+
+No6	- NEGATIVO	FALA 	imagem do candidato falando  sem ouvirmos, por baixo de narração  de reporter (lip flap)
+
+No7	-  NEGATIVO	QUADRO	Extreme close-up (corta cabeça ou queixo -muito detalhe)
+
+No8	- NEGATIVO	QUADRO	long shot (aberto, candidato a distância - distração com elementos ao redor)
+
+No9	- NEGATIVO	ÂNGULO 	De cima (diminui o candidato)
+
+No10 - NEGATIVO	MOV. LENTE	zoom-out (distanciamento)
+
+N11 - NEUTRO	FALA	imagem candidato sem fala embaixo de off reporter 12 - NEUTRO	FALA	imagens de outras pessoas com audio, sem candidato
+
+N13 - NEUTRO	FALA	off de reporter, sem imagem do candidato
+
+N14 - NEUTRO	FALA	cabeça de apresentador, sem imagem do candidato
+
+N15 - NEUTRO	FALA	passagem de repórter falando para cam, sem imagem do candidato
+
+N16 - NEUTRO	QUADRO	medium-shot (até cintura, pode aparecer gente ao lado)
+
+N17 - NEUTRO	MOV. LENTE	Nível do olho (conversa de pessoa para pessoa)
+
+## Dados
+
+```{r echo=TRUE}
+
+library(readr)
+setwd("~/ANOVA")
+Visual_Bias <- read_delim("VB.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+
+DT::datatable(Visual_Bias)
+
+```
+
+
+# Método do Estudo
+
+**Pressupostos do método** 
+
+1. Todas as observações devem ser independentes;
+
+2. As observações em cada grupo devem possuir uma distribuição, aproximadamente normal;
+
+3. As variâncias em cada grupo devem ser aproximadamente iguais;
+A variável dependente é contínua.
+
+## Etapa 1 - Organização e preparação dos dados
+
+Organização da variável categórica (Candidatos) dependente e independentes (demais variáveis) para aplicação dos testes;
+
+```{r}
+setwd("~/ANOVA")
+library(readxl)
+Tidy1 <- read_excel("Tidy1.xlsx")
+
+DT::datatable(Tidy1)
+
+Tidy2 <- read_excel("Tidy2.xlsx")
+
+TidyP <- read_excel("TidyP.xlsx")
+
+TidyNo <- read_excel("TidyNo.xlsx")
+
+TidyN <- read_excel("TidyN.xlsx")
+
+```
+
+
+## Etapa 2 - Análise de Variância simples
+
+### Variâncias dos candidatos (X) e respectivas variáveis (Y)
+
+Visualizar as variâncias dos dados dos candidadtos é uma forma simples para verificar se o tratamento das imagens distoam muito entre os candidatos. 
+
+
+```{r}
+.Agreg <- function(d) {
+  
+  DT::datatable(aggregate(VB ~ Candidato, d, var))
+  
+}
+# Analise com facada agrupado ao Bolsonaro
+.Agreg(Tidy1)
+
+# Analise com facada separada
+.Agreg(Tidy2)
+
+# Analise VB Positivo
+.Agreg(TidyP)
+
+# Analise VB Negativo
+.Agreg(TidyNo)
+
+# Analise VB Neutro
+.Agreg(TidyN)
+
+
+```
+
+Neste estudo podemos verificar que há distorções bastante acentuadas no tratamento das imagens a depender dos candidatos.
+
+### Teste de Bartlett para testar a homogeneidade das variâncias
+
+Teste para verificar a homogeneidade das variâncias. O p-valor do teste apresenta o resultado de um teste de hipótese. 
+
+Quando p-valor for menor que o nível de significância para o teste (convencionado em 0,05), rejeita-se a hipótese nula em favorecimento da hipótese alternativa. Isto significa que exite a desigualdade das variâncias. Caso ele seja maior que o nível de significância, conclui-se que as variâncias são constantes ou homogêneas.
+
+```{r}
+bartlett.test(VB ~ Candidato, Tidy1)
+
+```
+ 
+
+Neste estudo o p-valor do teste de Bartlett foi maior que 0,05, demonstrando assim a homogeneidade das variâncias.
+
+## Etapa 3 - Aplicando One-Way ANOVA
+
+A One-Way ANOVA é utilizado quando a variável resposta é contínua (Y = observações de Visual Bias) e a variável explanatória é categórica (X = Candidatos). 
+
+One-Way ANOVA é usado para testar diferenças entre pelo menos três grupos, uma vez que a comparação entre dois grupos pode ser obtida através do teste t.
+
+O gráfico "Residual vs. Fitted" indíca a variância dos resíduos com relação aos valores ajustados, sendo ideal para analisar a presença de não-linearidades no modelo. 
+
+O gráfico "Q-Q" dos resíduos padronizados, é usado para verificação da normalidade dos resíduos. 
+
+O gráfico "Scale-Location" indica a distribuição de pontos no intervalo de valores previstos. A variação deve ser razoavelmente igual em todo o intervalo do preditor. 
+
+
+### Análise ANOVA modelo Positivo, Negativo e Neutro agrupados
+
+```{r}
+
+.Anova <- function(z) {
+  A <- lm(VB ~ Candidato -1, data = z)
+  return(A)
+}
+
+# Análise AOV
+AnovaAOV <- aov(Tidy1$VB ~ Tidy1$Candidato)
+DT::datatable(anova(AnovaAOV))
+summary(AnovaAOV)
+
+# Linear Model Anova
+AnovaLM <- .Anova(Tidy1)
+summary(AnovaLM)
+anova(AnovaLM)
+
+# Linear Model Anova Separados
+VBSeparados <- .Anova(Tidy2)
+summary(VBSeparados)
+anova(VBSeparados)
+
+plot(VBSeparados)
+
+```
+
+#### Considerações Modelo Geral
+
+No gráfico "Residual vs. Fitted" os resíduos estão igualmente espalhados em torno de uma linha horizontal sem padrões distintos, o que é uma indicação de que não possui relações não lineares.  
+
+O gráfico "Q-Q" dos resíduos padronizados indica que os pontos caem ao longo de uma linha no meio do gráfico, mas se curvam nas extremidades. Os gráficos Q-Q normais que exibem esse comportamento geralmente mostam que os dados têm valores mais extremos do que seria esperado de uma distribuição Normal.
+
+O gráfico "Scale-Location" indica a suposição de igual variação (homoscedasticidade), devido a linha horizontal com pontos de dispersão aleatórios, com alterações mínimas.
+
+### Análise ANOVA modelo Positivo
+
+```{r}
+VBPositivo <- .Anova(TidyP)
+summary(VBPositivo)
+anova(VBPositivo)
+plot(VBPositivo)
+
+```
+
+#### Considerações Modelo Positivo
+
+No gráfico "Residual vs. Fitted" os resíduos estão igualmente espalhados em torno de uma linha horizontal sem padrões distintos, o que é uma indicação de que não possui relações não lineares.
+
+O mesmo resultado do gráfico "Q-Q" dos resíduos padronizados do modelo geral foi obtido do modelo positivo. O gráfico indica  que os dados têm valores mais extremos do que seria esperado de uma distribuição Normal.
+
+O gráfico "Scale-Location" indica a suposição de igual variação (homoscedasticidade), devido a linha horizontal com pontos de dispersão aleatórios, com alterações mínimas.
+
+### Análise ANOVA modelo Negativo
+
+```{r}
+
+VBNegativo <- .Anova(TidyNo)
+summary(VBNegativo)
+anova(VBNegativo)
+plot(VBNegativo)
+
+
+```
+
+#### Considerações Modelo negativo
+
+O gráfico "Residual vs. Fitted" indíca que os pontos não possui relações não lineares.  
+
+O gráfico "Q-Q" dos resíduos padronizados indica uma suposição bastante segura. Os pontos parecem cair sobre uma linha reta em que o eixo x plota os quantis teóricos. Esses são os quantis da distribuição normal padrão com média 0 e desvio padrão 1.
+
+O gráfico "Scale-Location" indica a suposição de igual variação (homoscedasticidade), devido a linha horizontal com pontos de dispersão aleatórios, com alterações mínimas.
+
+### Análise ANOVA modelo Neutro
+
+```{r}
+
+VBNeutro <- .Anova(TidyN)
+summary(VBNeutro)
+anova(VBNeutro)
+plot(VBNeutro)
+```
+
+#### Considerações Modelo Neutro
+
+No gráfico "Residual vs. Fitted" os resíduos estão igualmente espalhados em torno de uma linha horizontal sem padrões distintos, o que é uma indicação de que não possui relações não lineares.
+
+O gráfico "Q-Q" dos resíduos padronizados indica que os dados estão em uma distribuição normal, com poucos pontos de perturbação.
+
+O gráfico "Scale-Location" indica a suposição de igual variação (homoscedasticidade), devido a linha horizontal com pontos de dispersão aleatórios, com alterações mínimas.
+
+
+# Conclusões
+
+Os dados coletados mostram que há significância no diferencial do tratamento das imagens entre os candidatos avaliados.
+
+A ordem de candidatos que mais tiveram benefícios de Visual Bias Positivo é a seguinte (sendo 1-mais benefício, e 5 menos benefício):
+1- Bolsonaro
+2- Ciro
+3- Alckimin
+4- Marina
+5- Haddad
+
+A ordem de candidatos que mais tiveram prejuízos de Visual Bias negativo é a seguinte (sendo 1-mais prejuízo, e 5 menos prejuízo):
+1- Ciro
+2- Marina
+3- Alckimin
+4- Bolsonaro
+5- Haddad
+
+A ordem de candidatos que foram filmados de Visual Bias neutro é a seguinte (sendo 1-mais enquadramento neutro, e 5 menos enquadramento neutro):
+1- Bolsonaro
+2- Alckimin
+3- Marina
+4- Ciro
+5- Haddad
+
+Os testes indicam homoscedasticidade nos dados em uma distribuição linear com alguns pontos extremos de distribuição, os quais podem ser característicos das amostras, contudo, sem prejuízo a qualidade dos dados. 
+
+# Referências
+
+Becker, J. L. Estatística Básica: transformando dados em informação. Porto Alegre: Editora Bookman, 488 p. 2015.
+
+Casella, G. & Berger, R. L. Inferência Estatística. São Paulo: Cengage Learning, 588 p. 2010.
+
+Sant'Ana, R. Análise de Variância (ANOVA). UNIVALI / CTTMar / GEP.
+Disponível em http://lite.acad.univali.br/rcurso/anova/#Realizando_a_an_lise_no_R
+
+Guimarães, A. M. 2019. Análise de Variância (ANOVA) one-way e Tukey usando R. Disponível em: https://medium.com/omixdata/an%C3%A1lise-de-vari%C3%A2ncia-anova-one-way-e-tukey-usando-r-f91b6f79240e
+Vieira, S. Análise de Variância (ANOVA). São Paulo: Editora Atlâs, 204 p. 2006
+

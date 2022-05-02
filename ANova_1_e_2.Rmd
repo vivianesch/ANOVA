@@ -1,0 +1,291 @@
+---
+title: "Anova e Test t candidatos"
+author: 'CÃ³digo fonte: Viviane Schneider. MÃ¨todo e modelo: Marta'
+date: "16 de dezembro de 2020"
+output:
+  word_document:
+    toc: yes
+  html_document:
+    highlight: zenburn
+    html_document: default
+    keep_md: yes
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    word_document: default
+---
+
+```{r setup}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+setwd("~/ANOVA")
+
+# Pacotes e Funções
+library(tidyverse) # Manipulacao eficiente de dados
+library(ggplot2)
+library(dplyr)
+library(pdftools)
+library(RRPP)
+library(plotrix)
+library(purrr)
+
+```
+
+
+# Análise de variância Primeiro turno
+
+A Análise de Variância, ou ANOVA, é um teste paramétrico. Ela testa a hipótese de que a média de duas ou mais populações são iguais, servindo assim como uma ferramenta que auxilia o pesquisador a avaliar a importância de um ou mais fatores, comparando as médias das variáveis resposta em diferentes diferentes grupos. A variação que se vai verificar refere-se a diferença entre quadros dos Candidatos, e segue a fórmula abaixo:
+
+Diferença = $(Positivo * 0.7 + Neutro * 0.3) - Negativo$  
+
+O critério de classificação  são os candidatos como variável categórica, sendo utilizado ANOVA One way.
+
+O princípio utilizado pela ANOVA para determinar a diferença entre médias é baseada na análise de dois elementos da amostra: (i) a variação entre as médias dos grupos analisados; (ii) a variação em relação às amostras dentro do mesmo grupo.
+
+Temos que:
+
+SQ(total) = SQ(entre) + SQ(dentro)
+Onde:
+
+SQ(total) ou soma total de quadrados: é uma medida da variação total(em torno de x) em todos os dados amostrais combinados;
+
+SQ(entre): é uma medida da variação entre as médias amostrais combinados.
+
+Matematicamente calculamos o SQ(entre) da seguinte maneira:
+
+
+```{r message=FALSE, warning=FALSE}
+library(readxl)
+TidyN_1oturno_valendo <- read_excel("TidyN-1oturno_valendo.xlsx")
+TidyN_2oturno <- read_excel("TidyN_2oturno.xlsx")
+TidyN_1oturno_valendo_F_e_B <- read_excel("TidyN-1oturno_valendo_F_e_B.xlsx")
+
+Tidy_Calculado_1T <-
+           TidyN_1oturno_valendo %>%
+           mutate(Diferenca = Positivo + Neutro - Negativo)
+
+Tidy_Calculado_1T_BF <-
+           TidyN_1oturno_valendo_F_e_B %>%
+           mutate(Diferenca = Positivo + Neutro - Negativo)
+
+Tidy_Calculado_2T <-
+           TidyN_2oturno %>%
+           mutate(Diferenca = Positivo + Neutro - Negativo)
+
+```
+
+
+## Modelo de análise
+
+O modelo de análise refere-se ao candidado como 
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+modelo <- aov(Positivo + Neutro - Negativo ~ Candidato, data = Tidy_Calculado_1T_BF)
+modelo
+
+```
+
+
+- Em Call mostra a fórmula usada para executar a ANOVA
+
+- Em Terms, a primeira coluna é referente as análises dentro dos grupos e a segunda coluna referente as análises entre os grupos
+
+- Sum of Squares : soma dos quadrados
+
+- Df: graus de liberdade
+
+- Residual standard error: Erro padrão dos resíduos. Calculado a partir da raiz quadrada da divisão entre a soma dos quadrados dos resíduos e seus graus de liberdade.
+
+### Sumário do modelo
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+summary(modelo)
+
+```
+
+Acima há os seguintes dados:
+
+- Mean sq: quadrados médios.
+
+- F value: estatística F.
+
+- Pr(>F): valor-p para a estatística F.
+
+A partir da estatística F e seu valor-p abaixo de 0.05 podemos temos embasamento estatístico para afirmar com grande confiança que as médias das diferenças difere significantemente por candidato. Neste caso não há diferença significativa.
+
+## Testando as premissas da ANOVA
+
+O resultado da ANOVA só é robusto se as premissas do testes forem satisfeitas. 
+
+### Homogeneidade das amostras
+
+A homogeneidade testa se os dados são adequados. O Teste de Levene para homocedasticia é o mais adequando. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(car)
+
+leveneTest(Diferenca ~ Candidato, data = Tidy_Calculado_1T_BF, center = "mean")
+
+```
+
+A hipótese nula do Teste de Levene é de que não há diferença entre as variâncias dos grupos de candidatos. O valor-p maior do que 0.05 dá uma confiança estatística para afirmar que as variâncias são de fato iguais e portanto os dados são homogêneos. No resultado acima não há homogenidade.
+
+
+### Normalidade dos resíduos
+
+A premissa de normalidade dos resíduos na ANOVA é testada com o teste de Shapiro-Wilk:
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+shapiro.test(resid(modelo))
+
+```
+
+A hipótese nula do Teste de Shapiro-Wilk é de que não há diferença entre a distribuição dos dados e a distribuição normal. O valor-p maior do que 0.05 nos dá uma confiança estatística para afirmar que as distribuição dos resíduos não difere da distribuição normal.
+
+Os histogramas abaixo confirmam a falta de normalidade dos dados.
+
+```{r}
+library(lattice)
+
+histogram(~ Diferenca | Candidato,
+          data=Tidy_Calculado_1T_BF,
+          layout=c(1,5)) 
+```
+
+
+
+### Conclusão dos testes com ANOVA
+
+Dessa forma os dados não satisfazem todas as premissas da ANOVA e portanto, o resultado da ANOVA podem ser totalmente válidos.
+
+Como alternativa será utilizado um teste não paramétrico é um teste de hipótese de que não requer que a distribuição da população seja caracterizada com uma distribuição normal com parâmetros μ e σ. Os testes não paramétricos não têm essa suposição, de forma que eles são úteis quando os dados são fortemente não normais e resistentes à transformação.
+Uma alternativa a ANOVA é o teste de KRUSKAL-WALLIS, que analisa a variância entre 2 ou mais grupo.
+
+## Análise de variância com KRUSKAL-WALLIS
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ kruskal.test(Diferenca ~ Candidato, data = Tidy_Calculado_1T_BF)
+```
+
+O p-value é menor que o nível de significância 0.05, por isso conclui-se que que as médias das diferenças são significantes.
+
+
+Abaixo é possível verificar as médias das diferenças por candidatos, sendo que a facada foi somada ao Bolsonaro.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+aggregate(Diferenca ~ Candidato, data = Tidy_Calculado_1T_BF, FUN = median)
+
+```
+
+Abaixo é possível verificar as médias das diferenças por candidatos, sendo que a facada foi separada do Bolsonaro.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+aggregate(Diferenca ~ Candidato, data = Tidy_Calculado_1T, FUN = median)
+
+```
+
+
+No gráfico abaixo é possivel ver essa diferença entre os candidatos, em que a facada foi somada a pontuação do Bolsonaro.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+
+ggplot(data = Tidy_Calculado_1T_BF, mapping = aes(x = Candidato , y = Diferenca, colour = Candidato)) +
+    geom_boxplot() +
+    theme_bw() +
+    theme(legend.position = "none")
+```
+
+
+
+No gráfico abaixo é possivel ver essa diferença entre os candidatos, em que a facada separada da pontuação do Bolsonaro.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+
+ggplot(data = Tidy_Calculado_1T, mapping = aes(x = Candidato , y = Diferenca, colour = Candidato)) +
+    geom_boxplot() +
+    theme_bw() +
+    theme(legend.position = "none")
+```
+
+
+
+Abaixo e teste que compara todos os candidatos. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+pairwise.wilcox.test(Tidy_Calculado_1T_BF$Diferenca, Tidy_Calculado_1T_BF$Candidato,
+                 p.adjust.method = "BH")
+
+```
+
+Há diferenças significativas em todos os valores menores que 0.05, os quais são apresentados na matriz acima. A matriz deve ser lida comparando coluna com linha.Ex.: entre Marina e Ciro, Ciro e Alckmin, Haddad e Bolsonaro não há diferença significativa. Todos os outros ha diferenças significativas nos valores calculados.
+
+Abaixo o teste é feito separando da facada de bolsonaro
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+pairwise.wilcox.test(Tidy_Calculado_1T$Diferenca, Tidy_Calculado_1T$Candidato,
+                 p.adjust.method = "BH")
+
+```
+
+## Conclusão do Primeiro turno
+
+Somando os enquadramentos positivos e neutros e diminuindo os enquadramentos negativos, os candidatos mais beneficiados no primeiro turno foram Alckmin, Ciro e Marina. 
+
+
+# Test t no Segundo turno
+
+Abaixo a agregação dos candidatos do segundo turno, calculando-se as médias. Há uma diferença entre as médias do modelo, Diferença = $(Positivo * 0.7 + Neutro * 0.3) - Negativo$, conforme vemos abaixo. Agora vamos calcular com o Teste t se essa diferença é estatisticamente significante.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+aggregate(Diferenca ~ Candidato, data = Tidy_Calculado_2T, FUN = median)
+
+```
+
+
+Abaixo o test t de Student, que compara a significância da diferença de enquadramento entre Bolsonaro e Hadad, no segundo turno.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+Bolsonaro <- Tidy_Calculado_2T %>%
+             filter(Candidato == "BOLSONARO")
+
+Haddad <- Tidy_Calculado_2T %>%
+             filter(Candidato == "HADDAD")
+
+t.test(Bolsonaro$Diferenca, Haddad$Diferenca)
+
+
+```
+
+No gráfico é possível notar que Bolsonaro foi levemente beneficiado, tendo uma Diferença com a média um pouco maior que Haddad. Contudo, conforme descrito acima, essa diferença não é estatísticamente significante.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+
+ggplot(data = Tidy_Calculado_2T, mapping = aes(x = Candidato , y = Diferenca, colour = Candidato)) +
+    geom_boxplot() +
+    theme_bw() +
+    theme(legend.position = "none")
+```
+
+
+## Conclusão do segundo turno
+
+Apesar de haver diferença nas médias dos candidatos, essa diferença não é significativa estatisticamente. Assim, não é possivel afirmar que algum candidato tenha sido beneficiado com os enquadramentos do JN.
